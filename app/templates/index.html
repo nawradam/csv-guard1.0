@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV Guard | AI Security Auditor</title>
+<style>
+:root {
+    --primary: #2563eb;
+    --secondary: #fbbf24;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --text: #1e293b;
+    --log-user: #34d399;
+    --log-guardian: #fbbf24;
+    --log-system: #64748b;
+}
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: auto; padding: 40px 20px; background-color: var(--bg); color: var(--text); line-height: 1.6; }
+.container { background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+h1 { color: #0f172a; margin-top: 0; }
+
+form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+input[type="file"], input[type="text"] { padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; width: 100%; }
+button { background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+button:disabled { background: #94a3b8; cursor: not-allowed; }
+
+.logs-container { background: #1e293b; color: #38bdf8; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.9rem; max-height: 200px; overflow-y: auto; margin-bottom: 20px; }
+.log-entry { margin: 4px 0; }
+.log-guardian { color: var(--log-guardian); font-weight: bold; }
+.log-analyst { color: var(--log-user); }
+.log-system { color: var(--log-system); }
+
+.chat-container { background: #e2e8f0; padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
+.chat-bubble { padding: 10px; border-radius: 12px; margin: 5px 0; max-width: 80%; }
+.chat-user { background: #34d399; color: #fff; margin-left: auto; }
+.chat-ai { background: #2563eb; color: #fff; margin-right: auto; }
+
+.result-box { background: #fff; border: 2px solid #e2e8f0; padding: 20px; border-radius: 8px; min-height: 100px; white-space: pre-wrap; }
+.empty-state { color: #94a3b8; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>🛡️ CSV Guard</h1>
+    <p>Upload a CSV file to perform AI-powered safety checks. Ask questions only if the CSV is safe.</p>
+
+    <form method="post" enctype="multipart/form-data">
+        <input type="file" name="csv_file" accept=".csv">
+        <button type="submit" name="upload_csv">Upload CSV & Check Safety</button>
+    </form>
+
+    <form method="post">
+        <input type="text" name="user_question" placeholder="Ask a question about the CSV..." {% if not question_allowed %}disabled{% endif %}>
+        <button type="submit" name="ask_question" {% if not question_allowed %}disabled{% endif %}>Ask AI</button>
+    </form>
+
+    <h3>Step-by-Step Logs:</h3>
+    <div class="logs-container">
+        {% for log in logs %}
+            {% if "[Guardian]" in log %}<div class="log-entry log-guardian">{{ log }}</div>
+            {% elif "[Analyst]" in log %}<div class="log-entry log-analyst">{{ log }}</div>
+            {% else %}<div class="log-entry log-system">{{ log }}</div>{% endif %}
+        {% endfor %}
+        {% if logs|length == 0 %}<div class="empty-state">System idle. Waiting for CSV upload...</div>{% endif %}
+    </div>
+
+    <h3>CSV & AI Chat:</h3>
+    <div class="chat-container">
+        {% for msg in chat %}
+            {% if msg.role == 'user' %}
+                <div class="chat-bubble chat-user">{{ msg.message }}</div>
+            {% else %}
+                <div class="chat-bubble chat-ai">{{ msg.message }}</div>
+            {% endif %}
+        {% endfor %}
+        {% if chat|length == 0 %}<div class="empty-state">No chat yet.</div>{% endif %}
+    </div>
+
+    <h3>Final Result:</h3>
+    <div class="result-box">
+        {% if result %}{{ result }}{% else %}<span class="empty-state">No analysis yet.</span>{% endif %}
+    </div>
+
+    <a href="{{ url_for('reset_session') }}">🔄 Reset CSV & Chat</a>
+</div>
+</body>
+</html>
